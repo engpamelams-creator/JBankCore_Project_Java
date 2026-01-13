@@ -14,10 +14,12 @@ This project adopts a **Modular Monolith** architecture, grouping code by **Doma
 
 ### Key Technical Decisions
 *   **Java 21**: Leveraging Virtual Threads and modern syntax.
-*   **Security First**: Full implementation of **JWT (Stateless)** authentication + BCrypt.
-*   **Concurrency Control**: Using `PESSIMISTIC_WRITE` locking on Wallets to prevent Race Conditions during transfers.
-*   **Clean Code**: Explicit coding standards (English code / PT-BR Domain), extensive use of DTOs, and robust error handling.
-*   **Observability**: Structured Logging (`@Slf4j`) in all critical services.
+*   **Security (Fort Knox)**:
+    *   **JWT (Stateless)** authentication + BCrypt.
+    *   **Rate Limiting**: Bucket4j (Token Bucket) prevents brute force/DDoS.
+    *   **Defense in Depth**: Transactional PIN required for transfers.
+    *   **Data Privacy**: AES-256 Encryption for sensitive fields (Email/CPF) at rest.
+*   **Concurrency Control**: Using `PESSIMISTIC_WRITE` locking on Wallets to prevent Race Conditions.
 
 ---
 
@@ -77,15 +79,12 @@ Once running, access the **Swagger UI** to explore endpoints:
 
 ## 🛠️ Project Structure
 ```
-src/main/java/br/com/pamela/jbank/
-├── infra/              # Cross-cutting support (Security, Config)
-├── modulos/            # Domain Modules (The Core)
-│   ├── auth/           # Login/Signup/Tokens
-│   ├── carteiras/      # Wallets & Balance Logic
-│   ├── pix/            # Pix Keys & Payments
-│   ├── transacoes/     # Money Transfer Logic
-│   └── usuarios/       # User Management
-└── JBankApplication.java
+JBankCore_Project_Java/
+├── Back-end/           # Spring Boot API
+│   ├── src/
+│   ├── pom.xml
+│   └── start-dev.ps1
+└── README.md           # Documentation
 ```
 
 ---

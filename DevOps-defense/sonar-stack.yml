@@ -1,0 +1,15 @@
+version: "3"
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: jbank-security-auditor
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    networks:
+      - jbank-net
+
+networks:
+  jbank-net:
+    driver: bridge
