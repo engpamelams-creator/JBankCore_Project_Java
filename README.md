@@ -1,6 +1,6 @@
 # 🏦 JBank Core API
 
-> **Enterprise-Grade Fintech Backend** with Fort Knox Security, Clean Architecture, and Production-Ready Features
+> **Backend Fintech de Nível Empresarial** com Segurança Fort Knox, Clean Architecture e Recursos Production-Ready
 
 ![Java 21](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring_Boot-3.4-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
@@ -11,35 +11,35 @@
 
 ---
 
-## 📖 About
+## 📖 Sobre
 
-**JBank Core** is a high-performance banking API built to solve **real-world financial challenges**: race conditions in concurrent transactions, data encryption at rest, and distributed event processing. 
+**JBank Core** é uma API bancária de alta performance construída para resolver **desafios financeiros do mundo real**: condições de corrida em transações concorrentes, criptografia de dados em repouso e processamento de eventos distribuídos.
 
-This project demonstrates **Senior-level architecture** with:
-- 🛡️ **Fort Knox Security Protocol**: JWT + AES-256 + Rate Limiting
-- 🏗️ **Clean Architecture + DDD**: Domain-driven, framework-independent core
-- ⚡ **Polyglot Microservices**: Spring Boot + Quarkus + OpenFeign
+Este projeto demonstra **arquitetura de nível Sênior** com:
+- 🛡️ **Protocolo de Segurança Fort Knox**: JWT + AES-256 + Rate Limiting
+- 🏗️ **Clean Architecture + DDD**: Núcleo orientado a domínio, independente de frameworks
+- ⚡ **Microsserviços Poliglotas**: Spring Boot + Quarkus + OpenFeign
 - 📊 **Production Ready**: Swagger UI, Actuator, Circuit Breaker
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Arquitetura
 
-### System Flow
+### Fluxo do Sistema
 
 ```mermaid
 graph LR
-    Client[Client] --> RateLimit[Rate Limiter<br/>Bucket4j]
-    RateLimit --> Auth[JWT Auth Filter]
+    Client[Cliente] --> RateLimit[Rate Limiter<br/>Bucket4j]
+    RateLimit --> Auth[Filtro JWT Auth]
     Auth --> Controller[REST Controller]
-    Controller --> Service[Business Service]
+    Controller --> Service[Serviço de Negócio]
     Service --> Repository[JPA Repository<br/>Pessimistic Lock]
     Repository --> DB[(PostgreSQL)]
     
     Service --> RabbitMQ[RabbitMQ]
-    RabbitMQ --> Notification[Notification<br/>Service]
+    RabbitMQ --> Notification[Serviço de<br/>Notificação]
     
-    Controller --> Integrator[Integrator<br/>Service]
+    Controller --> Integrator[Serviço<br/>Integrador]
     Integrator --> BrasilAPI[Brasil API]
     Integrator --> OpenFinance[Open Finance]
     
@@ -49,15 +49,15 @@ graph LR
     style RabbitMQ fill:#f38181
 ```
 
-### Microservices Ecosystem
+### Ecossistema de Microsserviços
 
 ```mermaid
 graph TB
-    subgraph "JBank Ecosystem"
-        Core[JBank Core API<br/>Port 8080<br/>Spring Boot]
-        Notification[Notification Service<br/>Port 8081<br/>Spring Boot + RabbitMQ]
-        PixValidator[Pix Validator<br/>Port 8082<br/>Quarkus]
-        Integrator[Integrator<br/>Port 8083<br/>Spring Boot + OpenFeign]
+    subgraph "Ecossistema JBank"
+        Core[JBank Core API<br/>Porta 8080<br/>Spring Boot]
+        Notification[Serviço de Notificação<br/>Porta 8081<br/>Spring Boot + RabbitMQ]
+        PixValidator[Validador Pix<br/>Porta 8082<br/>Quarkus]
+        Integrator[Integrador<br/>Porta 8083<br/>Spring Boot + OpenFeign]
     end
     
     Core --> RabbitMQ[RabbitMQ<br/>Message Broker]
@@ -66,10 +66,10 @@ graph TB
     Core --> PixValidator
     Core --> Integrator
     
-    Integrator --> BrasilAPI[Brasil API<br/>External]
-    Integrator --> OpenFinance[Open Finance<br/>Simulated]
+    Integrator --> BrasilAPI[Brasil API<br/>Externa]
+    Integrator --> OpenFinance[Open Finance<br/>Simulado]
     
-    Core --> PostgreSQL[(PostgreSQL<br/>Database)]
+    Core --> PostgreSQL[(PostgreSQL<br/>Banco de Dados)]
     
     style Core fill:#6c5ce7
     style Notification fill:#00b894
@@ -79,45 +79,45 @@ graph TB
 
 ---
 
-## ✨ Key Features
+## ✨ Principais Funcionalidades
 
-### 🛡️ Fort Knox Security Protocol
+### 🛡️ Protocolo de Segurança Fort Knox
 
-- **JWT Stateless Authentication**: No session storage, fully scalable
-- **AES-256 Encryption**: PII data (CPF, Email) encrypted at rest
-- **Rate Limiting**: Bucket4j prevents brute-force attacks (5 req/min per IP)
-- **Transactional PIN**: Secondary authentication for sensitive operations
-- **OWASP Dependency Check**: Automated vulnerability scanning
+- **Autenticação JWT Stateless**: Sem armazenamento de sessão, totalmente escalável
+- **Criptografia AES-256**: Dados PII (CPF, Email) criptografados em repouso
+- **Rate Limiting**: Bucket4j previne ataques de força bruta (5 req/min por IP)
+- **PIN Transacional**: Autenticação secundária para operações sensíveis
+- **OWASP Dependency Check**: Verificação automatizada de vulnerabilidades
 
-### 💸 Core Banking Features
+### 💸 Funcionalidades Bancárias Core
 
-- **ACID Transactions**: Pessimistic locking prevents race conditions
-- **PIX Integration**: Key registration (EMAIL, CPF, PHONE, RANDOM)
-- **Wallet Management**: Real-time balance updates with concurrency control
-- **Audit Logs**: Complete transaction history for compliance
+- **Transações ACID**: Bloqueio pessimista previne condições de corrida
+- **Integração PIX**: Registro de chaves (EMAIL, CPF, TELEFONE, ALEATÓRIA)
+- **Gestão de Carteiras**: Atualizações de saldo em tempo real com controle de concorrência
+- **Logs de Auditoria**: Histórico completo de transações para conformidade
 
 ### 📊 Production Readiness
 
-- **Swagger UI**: Interactive API documentation (`/swagger-ui.html`)
-- **Spring Actuator**: Health checks and metrics (`/actuator/health`)
-- **Circuit Breaker**: Resilience4j for external integrations
-- **Event-Driven**: RabbitMQ for async notifications
+- **Swagger UI**: Documentação interativa da API (`/swagger-ui.html`)
+- **Spring Actuator**: Health checks e métricas (`/actuator/health`)
+- **Circuit Breaker**: Resilience4j para integrações externas
+- **Event-Driven**: RabbitMQ para notificações assíncronas
 
-### 🌐 External Integrations
+### 🌐 Integrações Externas
 
-- **Brasil API**: Real-time Brazilian banks data (~200 banks)
-- **Open Finance**: Architecture ready for OAuth2 integration
+- **Brasil API**: Dados de bancos brasileiros em tempo real (~200 bancos)
+- **Open Finance**: Arquitetura preparada para integração OAuth2
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Início Rápido
 
-### Prerequisites
+### Pré-requisitos
 
 - **Java 21** ([Download](https://adoptium.net/))
 - **Docker Desktop** ([Download](https://www.docker.com/products/docker-desktop))
 
-### One-Click Start 🎯
+### Início com Um Clique 🎯
 
 **Windows:**
 ```bash
@@ -132,161 +132,160 @@ chmod +x run.sh
 ./run.sh
 ```
 
-**That's it!** The script will:
-1. ✅ Check if Docker is running
-2. ✅ Build the project (`mvn clean package`)
-3. ✅ Start all containers (`docker-compose up`)
-4. ✅ Display access URLs
+**É isso!** O script irá:
+1. ✅ Verificar se o Docker está rodando
+2. ✅ Compilar o projeto (`mvn clean package`)
+3. ✅ Iniciar todos os containers (`docker-compose up`)
+4. ✅ Exibir URLs de acesso
 
-### Manual Start
+### Início Manual
 
 ```bash
-# Clone the repository
+# Clone o repositório
 git clone https://github.com/engpamelams-creator/JBankCore_Project_Java.git
 cd JBankCore
 
-# Start with Docker Compose
+# Inicie com Docker Compose
 docker-compose up --build
 ```
 
-### Access Points
+### Pontos de Acesso
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Swagger UI** | http://localhost:8080/swagger-ui.html | Interactive API docs |
+| Serviço | URL | Descrição |
+|---------|-----|-----------|
+| **Swagger UI** | http://localhost:8080/swagger-ui.html | Documentação interativa da API |
 | **Actuator Health** | http://localhost:8080/actuator/health | Health check |
-| **Actuator Metrics** | http://localhost:8080/actuator/metrics | Application metrics |
-| **RabbitMQ Management** | http://localhost:15672 | Message broker UI (guest/guest) |
-| **Integrator API** | http://localhost:8083/integrations/banks | Brazilian banks list |
+| **Actuator Metrics** | http://localhost:8080/actuator/metrics | Métricas da aplicação |
+| **RabbitMQ Management** | http://localhost:15672 | UI do message broker (guest/guest) |
+| **Integrator API** | http://localhost:8083/integrations/banks | Lista de bancos brasileiros |
 
 ---
 
-## 📚 Documentation
+## 📚 Documentação
 
-### API Endpoints
+### Endpoints da API
 
-Access the **Swagger UI** for complete API documentation:  
+Acesse o **Swagger UI** para documentação completa da API:  
 👉 **http://localhost:8080/swagger-ui.html**
 
-**How to authenticate:**
-1. Use `POST /auth/signup` to create an account
-2. Use `POST /auth/login` to get your JWT token
-3. Click **"Authorize"** in Swagger UI
-4. Enter: `Bearer <your-token>`
-5. Test protected endpoints!
+**Como autenticar:**
+1. Use `POST /auth/signup` para criar uma conta
+2. Use `POST /auth/login` para obter seu token JWT
+3. Clique em **"Authorize"** no Swagger UI
+4. Digite: `Bearer <seu-token>`
+5. Teste os endpoints protegidos!
 
-### Core Modules
+### Módulos Core
 
-- **Users** (`/modulos/usuarios`): Registration, authentication, profile management
-- **Wallets** (`/modulos/carteiras`): Balance management, ACID transactions
-- **Transactions** (`/modulos/transacoes`): Money transfers with pessimistic locking
-- **PIX** (`/modulos/pix`): PIX key registration and management
+- **Usuários** (`/modulos/usuarios`): Registro, autenticação, gestão de perfil
+- **Carteiras** (`/modulos/carteiras`): Gestão de saldo, transações ACID
+- **Transações** (`/modulos/transacoes`): Transferências de dinheiro com bloqueio pessimista
+- **PIX** (`/modulos/pix`): Registro e gestão de chaves PIX
 
 ---
 
-## 📁 Project Structure
+## 📁 Estrutura do Projeto
 
 ```
 JBankCore/
-├── Back-end/                          # Main application
+├── Back-end/                          # Aplicação principal
 │   ├── src/main/java/br/com/jbank/core/
-│   │   ├── modulos/                   # Business modules (DDD)
-│   │   │   ├── usuarios/              # User management
-│   │   │   ├── carteiras/             # Wallet management
-│   │   │   ├── transacoes/            # Transactions
-│   │   │   └── pix/                   # PIX integration
-│   │   ├── infra/                     # Infrastructure layer
-│   │   │   ├── defense/               # Security (JWT, Rate Limit)
-│   │   │   ├── messaging/             # RabbitMQ config
-│   │   │   └── config/                # Spring config
-│   │   └── shared/                    # Shared utilities
-│   ├── jbank-notification/            # Notification microservice
-│   ├── jbank-pix-validator/           # Pix validator (Quarkus)
-│   └── jbank-integrator/              # External integrations
-├── DevOps-defense/                    # Security & DevOps
-│   ├── scan-secrets.sh                # Secret scanner
-│   └── security-audit.md              # Security documentation
-├── docker-compose.yml                 # Container orchestration
-├── run.bat / run.sh                   # One-click start scripts
-└── README.md                          # This file
+│   │   ├── modulos/                   # Módulos de negócio (DDD)
+│   │   │   ├── usuarios/              # Gestão de usuários
+│   │   │   ├── carteiras/             # Gestão de carteiras
+│   │   │   ├── transacoes/            # Transações
+│   │   │   └── pix/                   # Integração PIX
+│   │   ├── infra/                     # Camada de infraestrutura
+│   │   │   ├── defense/               # Segurança (JWT, Rate Limit)
+│   │   │   ├── messaging/             # Configuração RabbitMQ
+│   │   │   └── config/                # Configuração Spring
+│   │   └── shared/                    # Utilitários compartilhados
+│   ├── jbank-notification/            # Microsserviço de notificação
+│   ├── jbank-pix-validator/           # Validador Pix (Quarkus)
+│   └── jbank-integrator/              # Integrações externas
+├── DevOps-defense/                    # Segurança & DevOps
+│   ├── scan-secrets.sh                # Scanner de segredos
+│   └── security-audit.md              # Documentação de segurança
+├── docker-compose.yml                 # Orquestração de containers
+└── README.md                          # Este arquivo
 ```
 
-### Why `DevOps-defense`?
+### Por que `DevOps-defense`?
 
-This folder contains **security automation** and **audit documentation**:
-- **Secret Scanner**: Prevents accidental password commits
-- **OWASP Dependency Check**: Automated vulnerability scanning
-- **Security Audit**: Compliance documentation
+Esta pasta contém **automação de segurança** e **documentação de auditoria**:
+- **Scanner de Segredos**: Previne commits acidentais de senhas
+- **OWASP Dependency Check**: Verificação automatizada de vulnerabilidades
+- **Auditoria de Segurança**: Documentação de conformidade
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Stack Tecnológica
 
-### Core Technologies
+### Tecnologias Core
 
-| Category | Technology |
+| Categoria | Tecnologia |
 |----------|-----------|
-| **Language** | Java 21 |
+| **Linguagem** | Java 21 |
 | **Frameworks** | Spring Boot 3.4, Quarkus 3.6 |
-| **Database** | PostgreSQL 16 |
+| **Banco de Dados** | PostgreSQL 16 |
 | **Message Broker** | RabbitMQ 3.13 |
-| **API Integration** | Spring Cloud OpenFeign |
-| **Containerization** | Docker, Docker Compose |
+| **Integração de API** | Spring Cloud OpenFeign |
+| **Containerização** | Docker, Docker Compose |
 
-### Security & Observability
+### Segurança & Observabilidade
 
-| Feature | Implementation |
+| Funcionalidade | Implementação |
 |---------|---------------|
-| **Authentication** | JWT (jjwt 0.11.5) |
-| **Encryption** | AES-256 (Java Crypto) |
+| **Autenticação** | JWT (jjwt 0.11.5) |
+| **Criptografia** | AES-256 (Java Crypto) |
 | **Rate Limiting** | Bucket4j 7.6.0 |
-| **API Docs** | SpringDoc OpenAPI 2.3.0 |
-| **Monitoring** | Spring Boot Actuator |
-| **Resilience** | Resilience4j Circuit Breaker |
+| **Documentação API** | SpringDoc OpenAPI 2.3.0 |
+| **Monitoramento** | Spring Boot Actuator |
+| **Resiliência** | Resilience4j Circuit Breaker |
 
 ---
 
-## 🎓 Learning Highlights
+## 🎓 Destaques de Aprendizado
 
-This project demonstrates:
+Este projeto demonstra:
 
-✅ **Clean Architecture**: Domain layer independent of frameworks  
-✅ **DDD (Domain-Driven Design)**: Business logic in domain entities  
-✅ **CQRS Pattern**: Separate read/write operations  
-✅ **Event-Driven Architecture**: Async processing with RabbitMQ  
-✅ **Gateway Pattern**: Centralized external integrations  
-✅ **Circuit Breaker**: Resilience for external APIs  
-✅ **Pessimistic Locking**: Prevents race conditions in transactions  
-✅ **Multi-Stage Docker Builds**: Optimized container images  
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+✅ **Clean Architecture**: Camada de domínio independente de frameworks  
+✅ **DDD (Domain-Driven Design)**: Lógica de negócio em entidades de domínio  
+✅ **Padrão CQRS**: Operações de leitura/escrita separadas  
+✅ **Arquitetura Event-Driven**: Processamento assíncrono com RabbitMQ  
+✅ **Padrão Gateway**: Integrações externas centralizadas  
+✅ **Circuit Breaker**: Resiliência para APIs externas  
+✅ **Bloqueio Pessimista**: Previne condições de corrida em transações  
+✅ **Builds Docker Multi-Stage**: Imagens de container otimizadas  
 
 ---
 
-## 📄 License
+## 🤝 Contribuindo
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Contribuições são bem-vindas! Sinta-se à vontade para enviar um Pull Request.
 
 ---
 
-## 👩‍💻 Author
+## 📄 Licença
+
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+---
+
+## 👩‍💻 Autora
 
 **Pamela Menezes**  
-Senior Java Architect | Fintech Specialist
+Arquiteta Java Sênior | Especialista em Fintech
 
 [![GitHub](https://img.shields.io/badge/GitHub-engpamelams--creator-181717?style=for-the-badge&logo=github)](https://github.com/engpamelams-creator)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/pamela-menezes)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Conectar-0077B5?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/pamela-menezes)
 
 ---
 
 <div align="center">
 
-**⭐ If you found this project helpful, please give it a star!**
+**⭐ Se este projeto foi útil para você, por favor dê uma estrela!**
 
-Made with ❤️ and ☕ by Pamela Menezes
+Feito com ❤️ e ☕ por Pamela Menezes
 
 </div>
