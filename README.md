@@ -1,6 +1,6 @@
 # 🏦 JBank Core API
 
-> **Enterprise-Grade Modular Monolith Fintech Backend** built with Java 21, Spring Boot 3.4, and Clean Architecture principles.
+> **Backend Fintech de Nível Empresarial com Arquitetura Modular Monolítica** construído com Java 21, Spring Boot 3.4 e princípios de Clean Architecture.
 
 ![Java 21](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring_Boot-3.4-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
@@ -9,55 +9,59 @@
 
 ---
 
-## 🏗️ Architecture & Design
-This project adopts a **Modular Monolith** architecture, grouping code by **Domain Feature** (`modulos/*`) rather than technical layers. This approach ensures high cohesion and low coupling, paving the way for easier microservices extraction in the future if needed.
+## 🏗️ Arquitetura & Design
 
-### Key Technical Decisions
-*   **Java 21**: Leveraging Virtual Threads and modern syntax.
-*   **Security (Fort Knox)**:
-    *   **JWT (Stateless)** authentication + BCrypt.
-    *   **Rate Limiting**: Bucket4j (Token Bucket) prevents brute force/DDoS.
-    *   **Defense in Depth**: Transactional PIN required for transfers.
-    *   **Data Privacy**: AES-256 Encryption for sensitive fields (Email/CPF) at rest.
-*   **Concurrency Control**: Using `PESSIMISTIC_WRITE` locking on Wallets to prevent Race Conditions.
+Este projeto adota uma arquitetura **Modular Monolítica**, agrupando código por **Domínio/Funcionalidade** (`modulos/*`) em vez de camadas técnicas. Esta abordagem garante alta coesão e baixo acoplamento, pavimentando o caminho para uma eventual extração de microserviços, se necessário.
+
+### Decisões Técnicas Chave
+
+*   **Java 21**: Aproveitando Virtual Threads e sintaxe moderna.
+*   **Segurança "Fort Knox"**:
+    *   **JWT (Stateless)** autenticação + BCrypt.
+    *   **Rate Limiting**: Bucket4j (Token Bucket) previne ataques de força bruta/DDoS.
+    *   **Defesa em Profundidade**: PIN transacional obrigatório para transferências.
+    *   **Privacidade de Dados**: Criptografia AES-256 para campos sensíveis (Email/CPF) em repouso.
+*   **Controle de Concorrência**: Uso de `PESSIMISTIC_WRITE` locking em Carteiras para prevenir Race Conditions.
+*   **Padrão JSend**: Respostas padronizadas da API (`success`, `fail`, `error`) para facilitar consumo e manutenção.
+*   **Injeção de Dependência Explícita**: Uso de `@Autowired` em construtores para maior previsibilidade e validação.
 
 ---
 
-## 📦 Modules
+## 📦 Módulos
 
-### 1. Auth & Users (`/modulos/auth`, `/modulos/usuarios`)
-*   **Features**: Signup, Login, JWT Generation, User Profile.
-*   **Security**: Password encryption, Role-based access (MVP defaults to `ROLE_USER`).
+### 1. Autenticação & Usuários (`/modulos/auth`, `/modulos/usuarios`)
+*   **Funcionalidades**: Cadastro, Login, Geração de JWT, Perfil de Usuário, Definição de PIN Transacional.
+*   **Segurança**: Criptografia de senha, Controle de acesso baseado em roles (MVP padrão: `ROLE_USER`).
 
-### 2. Transactions (`/modulos/transacoes`)
-*   **Features**: Peer-to-Peer (P2P) transfers between wallets.
-*   **Consistency**: ACID transactions with **Deadlock Prevention** (Resource Ordering by ID).
-*   **Precision**: Strict use of `BigDecimal` for monetary values.
+### 2. Transações (`/modulos/transacoes`)
+*   **Funcionalidades**: Transferências Peer-to-Peer (P2P) entre carteiras.
+*   **Consistência**: Transações ACID com **Prevenção de Deadlock** (Ordenação de Recursos por ID).
+*   **Precisão**: Uso estrito de `BigDecimal` para valores monetários.
 
 ### 3. Pix (`/modulos/pix`)
-*   **Features**:
-    *   **Keys**: Register unique keys (CPF, EMAIL, PHONE, RANDOM).
-    *   **Management**: List and Delete User Keys.
-    *   **Validation**: Rule enforcement (Max 5 keys/user).
+*   **Funcionalidades**:
+    *   **Chaves**: Registro de chaves únicas (CPF, EMAIL, PHONE, RANDOM).
+    *   **Gerenciamento**: Listagem e Exclusão de Chaves do Usuário.
+    *   **Validação**: Aplicação de regras (Máx. 5 chaves/usuário).
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Começando
 
-### Prerequisites
-*   **Java 21 JDK** (Script auto-detects or helps you find it)
-*   **Maven** (Wrapper included)
-*   **Docker** (Optional, for integration tests)
+### Pré-requisitos
+*   **Java 21 JDK** (Script detecta automaticamente ou ajuda você a encontrá-lo)
+*   **Maven** (Wrapper incluído)
+*   **Docker** (Opcional, para testes de integração)
 
-### One-Click Run (PowerShell)
-We use a developer experience script to automate the build and run process.
+### Execução com Um Clique (PowerShell)
+Utilizamos um script de experiência do desenvolvedor para automatizar o processo de build e execução.
 
 ```powershell
 ./start-dev.ps1
 ```
-*Checks for Java 21 -> Builds (Skipping Tests for Speed) -> Starts App -> Opens Swagger UI*
+*Verifica Java 21 → Compila (Pulando Testes para Velocidade) → Inicia App → Abre Swagger UI*
 
-### Manual Run
+### Execução Manual
 ```bash
 mvn clean install
 java -jar target/jbank-core-0.0.1-SNAPSHOT.jar
@@ -65,28 +69,132 @@ java -jar target/jbank-core-0.0.1-SNAPSHOT.jar
 
 ---
 
-## 📚 API Documentation
-Once running, access the **Swagger UI** to explore endpoints:
+## 📚 Documentação da API
+
+Uma vez em execução, acesse a **Swagger UI** para explorar os endpoints:
 👉 **[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)**
 
-### Key Endpoints
-*   `POST /auth/signup` - Register new user
-*   `POST /auth/login` - Get JWT Token
-*   `POST /transactions/transfer` - Send money
-*   `POST /pix/keys` - Register Pix Key
+### Endpoints Principais
+*   `POST /auth/signup` - Registrar novo usuário
+*   `POST /auth/login` - Obter Token JWT
+*   `POST /api/v1/users/pin` - Definir PIN transacional
+*   `POST /api/v1/transfers` - Enviar dinheiro
+*   `POST /pix/keys` - Registrar Chave Pix
+*   `GET /pix/keys` - Listar Chaves Pix do usuário
+
+### Formato de Resposta JSend
+
+Todas as respostas da API seguem o padrão JSend para consistência:
+
+**Sucesso (2xx):**
+```json
+{
+  "status": "success",
+  "data": { /* payload */ }
+}
+```
+
+**Falha de Validação (4xx):**
+```json
+{
+  "status": "fail",
+  "data": "Mensagem de erro ou objeto com detalhes"
+}
+```
+
+**Erro do Sistema (5xx):**
+```json
+{
+  "status": "error",
+  "message": "Descrição do erro",
+  "code": "OPTIONAL_ERROR_CODE"
+}
+```
 
 ---
 
-## 🛠️ Project Structure
+## 🛠️ Estrutura do Projeto
+
 ```
 JBankCore_Project_Java/
-├── Back-end/           # Spring Boot API
+├── Back-end/                    # Spring Boot API
 │   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/br/com/jbank/core/
+│   │   │   │   ├── modulos/     # Módulos de Domínio
+│   │   │   │   │   ├── auth/    # Autenticação
+│   │   │   │   │   ├── usuarios/ # Gestão de Usuários
+│   │   │   │   │   ├── transacoes/ # Transferências
+│   │   │   │   │   └── pix/     # Sistema Pix
+│   │   │   │   └── infra/       # Infraestrutura
+│   │   │   │       ├── defense/ # Segurança (JWT, Rate Limit, Crypto)
+│   │   │   │       ├── response/ # Padrão JSend
+│   │   │   │       └── exception/ # Tratamento Global de Erros
+│   │   │   └── resources/
+│   │   └── test/
 │   ├── pom.xml
 │   └── start-dev.ps1
-└── README.md           # Documentation
+└── README.md                    # Esta documentação
 ```
 
 ---
 
-*Verified by "The Exterminator" QA Code Review.*
+## 🔒 Segurança
+
+### Camadas de Proteção "Fort Knox"
+
+1. **Autenticação JWT Stateless**: Tokens assinados com HS256, validados em cada requisição.
+2. **Rate Limiting**: Proteção contra ataques de força bruta e DDoS usando Bucket4j.
+3. **PIN Transacional**: Camada adicional de segurança para operações financeiras sensíveis.
+4. **Criptografia de Dados**: AES-256 para PII (CPF, Email) em repouso no banco de dados.
+5. **Locking Pessimista**: Previne race conditions em operações de saldo de carteira.
+6. **Tratamento Global de Exceções**: Respostas de erro padronizadas sem exposição de detalhes internos.
+
+---
+
+## 🧪 Testes
+
+```bash
+# Executar todos os testes
+mvn test
+
+# Executar apenas testes de integração
+mvn verify -P integration-tests
+```
+
+---
+
+## 📈 Melhorias Recentes
+
+### ✅ Refatoração de Injeção de Dependência
+*   Substituição de `@RequiredArgsConstructor` por construtores explícitos com `@Autowired` em todos os Services e Controllers.
+*   **Benefício**: Maior previsibilidade e validação de injeção de dependência pelo Spring Framework.
+
+### ✅ Implementação do Padrão JSend
+*   Criação de classes de resposta padronizadas: `JSendSuccessResponse`, `JSendFailResponse`, `JSendErrorResponse`.
+*   **Benefício**: API mais consistente e fácil de consumir, seguindo especificação JSend.
+
+### ✅ Tratamento Global de Exceções
+*   `GlobalExceptionHandler` centraliza o tratamento de erros e retorna respostas JSend apropriadas.
+*   **Benefício**: Respostas de erro consistentes em toda a API, sem exposição de stack traces.
+
+---
+
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas! Por favor, siga os padrões de código estabelecidos:
+*   Use `BigDecimal` para valores monetários.
+*   Implemente locking apropriado para operações concorrentes.
+*   Mantenha a separação de responsabilidades (Clean Architecture).
+*   Escreva testes para novas funcionalidades.
+
+---
+
+## 📝 Licença
+
+Este projeto é de código aberto e está disponível sob a licença MIT.
+
+---
+
+*Desenvolvido com ❤️ usando Java 21 e Spring Boot 3.4*
+*Verificado pelo "The Exterminator" QA Code Review.*

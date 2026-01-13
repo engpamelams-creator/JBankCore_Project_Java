@@ -6,19 +6,27 @@ import br.com.jbank.core.modulos.transacoes.controller.dto.TransferRequestDTO;
 import br.com.jbank.core.modulos.transacoes.controller.dto.TransferResponseDTO;
 import br.com.jbank.core.modulos.transacoes.domain.Transaction;
 import br.com.jbank.core.modulos.transacoes.domain.TransactionRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @lombok.extern.slf4j.Slf4j
 public class TransferService {
 
     private final TransactionRepository transactionRepository;
     private final WalletRepository walletRepository;
-
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    @Autowired
+    public TransferService(
+            TransactionRepository transactionRepository,
+            WalletRepository walletRepository,
+            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
+        this.transactionRepository = transactionRepository;
+        this.walletRepository = walletRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     /**
      * Executes a financial transfer with ACID guarantees and Pessimistic Locking.

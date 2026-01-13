@@ -5,8 +5,8 @@ import br.com.jbank.core.modulos.pix.domain.PixKeyRepository;
 import br.com.jbank.core.modulos.pix.dto.PixDTOs;
 import br.com.jbank.core.modulos.usuarios.domain.User;
 import br.com.jbank.core.modulos.usuarios.domain.UserRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,12 +18,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PixService {
 
     private final PixKeyRepository pixKeyRepository;
     private final UserRepository userRepository;
+
+    @Autowired
+    public PixService(PixKeyRepository pixKeyRepository, UserRepository userRepository) {
+        this.pixKeyRepository = pixKeyRepository;
+        this.userRepository = userRepository;
+    }
 
     public PixDTOs.PixKeyResponse createKey(PixDTOs.PixKeyRequest request) {
         User user = getAuthenticatedUser();
