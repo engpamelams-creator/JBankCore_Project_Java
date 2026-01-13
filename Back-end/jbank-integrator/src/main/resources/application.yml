@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: jbank-integrator
+  
+server:
+  port: 8083
+
+# Feign Configuration
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: basic
+
+# Open Finance Configuration (Mock)
+open-finance:
+  base-url: http://localhost:9999
+  # PRODUCTION: Replace with real Open Finance URL
+  # oauth2:
+  #   client-id: ${OPEN_FINANCE_CLIENT_ID}
+  #   client-secret: ${OPEN_FINANCE_CLIENT_SECRET}
+  #   token-url: https://auth.openfinance.com.br/token
+
+# Logging
+logging:
+  level:
+    br.com.jbank.integrator: INFO
+    feign: DEBUG
