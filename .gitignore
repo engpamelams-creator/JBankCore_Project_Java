@@ -1,0 +1,11 @@
+target/
+*.class
+.idea/
+*.iml
+.vscode/
+*.log
+.DS_Store
+.maven-portable/
+build_error.log
+test_error.log
+.env
