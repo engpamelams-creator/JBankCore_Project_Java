@@ -1,0 +1,28 @@
+# Stage 1: Build
+FROM registry.access.redhat.com/ubi8/openjdk-21:1.18 AS build
+USER root
+WORKDIR /work
+
+# Copy Maven files
+COPY pom.xml .
+COPY src ./src
+
+# Build application
+RUN mvn clean package -DskipTests
+
+# Stage 2: Runtime
+FROM registry.access.redhat.com/ubi8/openjdk-21-runtime:1.18
+WORKDIR /deployments
+
+# Copy the built application
+COPY --from=build /work/target/quarkus-app/lib/ ./lib/
+COPY --from=build /work/target/quarkus-app/*.jar ./
+COPY --from=build /work/target/quarkus-app/app/ ./app/
+COPY --from=build /work/target/quarkus-app/quarkus/ ./quarkus/
+
+EXPOSE 8082
+
+ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+
+ENTRYPOINT ["java", "-jar", "/deployments/quarkus-run.jar"]

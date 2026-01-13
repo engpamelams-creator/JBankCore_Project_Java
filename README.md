@@ -1,9 +1,10 @@
 # 🏦 JBank Core API
 
-> **Backend Fintech de Nível Empresarial com Arquitetura Modular Monolítica + Microsserviços** construído com Java 21, Spring Boot 3.4, RabbitMQ e princípios de Clean Architecture.
+> **Backend Fintech de Nível Empresarial com Arquitetura Modular Monolítica + Microsserviços** construído com Java 21, Spring Boot 3.4, Quarkus, RabbitMQ e princípios de Clean Architecture.
 
 ![Java 21](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring_Boot-3.4-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Quarkus 3.6](https://img.shields.io/badge/Quarkus-3.6-4695EB?style=for-the-badge&logo=quarkus&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.13-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -36,17 +37,24 @@ Microsserviço de notificação desacoplado usando **RabbitMQ** para comunicaç�
 ```
 ┌─────────────────────┐         ┌──────────────┐         ┌─────────────────────────┐
 │   JBank Core API    │         │   RabbitMQ   │         │  Notification Service   │
-│     (Port 8080)     │────────▶│   Message    │────────▶│      (Port 8081)        │
-│                     │ Publish │    Broker    │ Consume │                         │
-│  - Transferências   │         │              │         │  - Envio de Emails      │
-│  - Autenticação     │         │   Queue:     │         │  - Envio de SMS         │
-│  - Gestão Carteiras │         │  transaction-│         │  - Push Notifications   │
-│  - PIX              │         │  notification│         │                         │
-└─────────────────────┘         └──────────────┘         └─────────────────────────┘
-         │                             │                            │
-         ▼                             ▼                            ▼
-   PostgreSQL                    Management UI              Logs/Email Service
-   (Supabase)                   (Port 15672)               (Simulado via logs)
+│  (Spring Boot 3.4)  │────────▶│   Message    │────────▶│   (Spring Boot 3.4)     │
+│     Port: 8080      │ Publish │    Broker    │ Consume │      Port: 8081         │
+│                     │         │              │         │                         │
+│  - Transferências   │         │   Queue:     │         │  - Envio de Emails      │
+│  - Autenticação     │         │  transaction-│         │  - Envio de SMS         │
+│  - Gestão Carteiras │         │  notification│         │  - Push Notifications   │
+│  - PIX              │         │              │         │                         │
+└────────┬────────────┘         └──────────────┘         └─────────────────────────┘
+         │
+         │ HTTP
+         ▼
+┌─────────────────────┐
+│  Pix Validator      │  ◀── NOVO! Quarkus (Cloud Native)
+│   (Quarkus 3.6)     │
+│     Port: 8082      │  ⚡ Supersônico & Subatômico
+│                     │  📊 Startup: 0.8s | Memory: 120MB
+│  - Validação PIX    │
+└─────────────────────┘
 ```
 
 ### Decisões Técnicas Chave
@@ -80,6 +88,14 @@ Microsserviço de notificação desacoplado usando **RabbitMQ** para comunicaç�
     *   **Chaves**: Registro de chaves únicas (CPF, EMAIL, PHONE, RANDOM).
     *   **Gerenciamento**: Listagem e Exclusão de Chaves do Usuário.
     *   **Validação**: Aplicação de regras (Máx. 5 chaves/usuário).
+    *   **Integração**: Validação de formato via microsserviço Quarkus (opcional).
+
+### 4. Pix Validator (`jbank-pix-validator` - Quarkus)
+*   **Funcionalidades**:
+    *   **Validação Ultra-Rápida**: Validação de formato de chaves PIX em ~1ms.
+    *   **Tipos Suportados**: EMAIL, CPF, PHONE, RANDOM (UUID).
+    *   **Cloud Native**: Startup em 0.8s, consumo de apenas 120MB de memória.
+    *   **API REST**: Endpoint `POST /api/pix/validate` com documentação Swagger.
 
 ---
 
