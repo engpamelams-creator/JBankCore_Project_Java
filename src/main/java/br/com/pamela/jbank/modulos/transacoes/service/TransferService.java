@@ -12,53 +12,63 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class TransferService {
 
     private final TransactionRepository transactionRepository;
     private final WalletRepository walletRepository;
 
     /**
-     * Realiza a transferência financeira com garantias ACID e Lock Pessimista.
+     * Executes a financial transfer with ACID guarantees and Pessimistic Locking.
+     * <p>
+     * Implements Resource Ordering (Deadlock Prevention) by locking wallets based on ID order.
+     * </p>
      * 
-     * @param request DTO com dados da solicitação (já validado pelo Controller via @Valid)
-     * @return TransferResponseDTO com os dados da transação efetuada
+     * @param request DTO containing transfer details (pre-validated by Controller)
+     * @return TransferResponseDTO with the completed transaction data
+     * @throws IllegalArgumentException if business rules are violated (e.g., self-transfer, insufficient balance)
      */
     @Transactional
     public TransferResponseDTO performTransfer(TransferRequestDTO request) {
-        
-        // 1. Validação de Negócio: Auto-transferência
+        log.info("Initiating transfer of {} from [{}] to [{}]", request.amount(), request.senderId(), request.receiverId());
+
+        // 1. Business Validation: Self-transfer check
         if (request.senderId().equals(request.receiverId())) {
-            throw new IllegalArgumentException("Não é possível transferir para a mesma conta.");
+            log.warn("Attempted self-transfer for ID: {}", request.senderId());
+            throw new IllegalArgumentException("Cannot transfer to the same account.");
         }
 
-        // Pamela: Buscamos e travamos as carteiras (Pessimistic Lock).
-        // A ordem aqui não importa tanto para Deadlock se sempre ordenarmos por ID,
-        // mas para simplicidade vamos buscar sender depois receiver.
-        // Em produção de alta escala, ordenaríamos os IDs (sender, receiver) para evitar Deadlock.
+        // 2. Deadlock Prevention: Resource Ordering
+        // Always lock the wallet with the smaller ID first
+        var firstLockId = request.senderId().compareTo(request.receiverId()) < 0 ? request.senderId() : request.receiverId();
+        var secondLockId = request.senderId().compareTo(request.receiverId()) < 0 ? request.receiverId() : request.senderId();
+
+        var wallet1 = walletRepository.findByIdWithLock(firstLockId)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found with ID: " + firstLockId));
         
-        Wallet senderWallet = walletRepository.findByIdWithLock(request.senderId())
-                .orElseThrow(() -> new IllegalArgumentException("Remetente não encontrado."));
+        var wallet2 = walletRepository.findByIdWithLock(secondLockId)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found with ID: " + secondLockId));
 
-        Wallet receiverWallet = walletRepository.findByIdWithLock(request.receiverId())
-                .orElseThrow(() -> new IllegalArgumentException("Destinatário não encontrado."));
+        // Resolve which is sender and receiver
+        var senderWallet = wallet1.getId().equals(request.senderId()) ? wallet1 : wallet2;
+        var receiverWallet = wallet1.getId().equals(request.receiverId()) ? wallet1 : wallet2;
 
-        // 2. Validação de Saldo/Domínio
-        // O método 'debit' da entidade Wallet já lança exceção se saldo for insuficiente.
-        // Aqui apenas chamamos. O Service orquestra, a Entidade protege suas regras.
+        // 3. Balance Validation & Operation
         try {
             senderWallet.debit(request.amount());
         } catch (IllegalStateException e) {
-            throw new IllegalArgumentException("Saldo insuficiente.");
+            log.error("Insufficient funds for wallet [{}]. Current balance: {}", senderWallet.getId(), senderWallet.getBalance());
+            throw new IllegalArgumentException("Insufficient balance.");
         }
         
         receiverWallet.credit(request.amount());
         
-        // 3. Persistência
+        // 4. Persistence
         walletRepository.save(senderWallet);
         walletRepository.save(receiverWallet);
 
-        // 4. Registrar Transação
-        Transaction transaction = Transaction.builder()
+        // 5. Audit/history Logging
+        var transaction = Transaction.builder()
                 .senderWalletId(senderWallet.getId())
                 .receiverWalletId(receiverWallet.getId())
                 .amount(request.amount())
@@ -66,8 +76,9 @@ public class TransferService {
                 .build();
         
         transaction = transactionRepository.save(transaction);
+        log.info("Transfer completed successfully. Transaction ID: {}", transaction.getId());
 
-        // 5. Mapeamento para DTO (Output)
+        // 6. Return DTO
         return new TransferResponseDTO(
             transaction.getId(),
             transaction.getAmount(),

@@ -5,13 +5,22 @@ $ErrorActionPreference = "Stop"
 $AppUrl = "http://localhost:8080"
 $SwaggerUrl = "$AppUrl/swagger-ui/index.html"
 
+# --- 0. Logs Directory Setup ---
+$LogsDir = Join-Path $PSScriptRoot "logs"
+if (-not (Test-Path $LogsDir)) {
+    New-Item -ItemType Directory -Path $LogsDir | Out-Null
+    Write-Host "📂 Pasta 'logs' criada." -ForegroundColor Gray
+}
+
 Write-Host "Iniciando JBank Core API - Dev Mode" -ForegroundColor Cyan
 
-# --- Auto-detect Java 21 ---
+# --- 1. Auto-detect Java 21 ---
 $requiredJavaVersion = "21"
 $javaVersion = cmd /c "java -version 2>&1"
+
+# Logic for detection (retained from original)
 if ($javaVersion -notmatch "version .?21") {
-    Write-Host "⚠️  Java 21 padrao nao detectado. Procurando instalacao..." -ForegroundColor Yellow
+    Write-Host "⚠️  Java 21 padrão não detectado. Procurando instalação..." -ForegroundColor Yellow
     $potentialPaths = @(
         "C:\Program Files\Java\jdk-21*",
         "C:\Program Files\Common Files\Oracle\Java\javapath",
@@ -32,30 +41,27 @@ if ($javaVersion -notmatch "version .?21") {
     }
 }
 
-# Verificar novamente
-# Verificar novamente
+# Verify again
 if ($env:JAVA_HOME) {
     $javaExe = "$env:JAVA_HOME\bin\java.exe"
     $verifyVersion = cmd /c """$javaExe"" -version 2>&1"
     if ($verifyVersion -notmatch "version .?21") {
-        Write-Warning "Java 21 foi configurado mas a verificacao retornou: $verifyVersion"
+        Write-Warning "Java 21 foi configurado mas a verificação retornou: $verifyVersion"
     }
     else {
         Write-Host "✅ Ambiente configurado com sucesso para Java 21." -ForegroundColor Green
     }
 }
 else {
-    # Fallback check
     $javaVersion = cmd /c "java -version 2>&1"
     if ($javaVersion -notmatch "version .?21") {
-        Write-Error "❌ ERRO: Java 21 nao encontrado."
+        Write-Error "❌ ERRO: Java 21 não encontrado."
         exit 1
     }
 }
 
-# --- Maven Check ---tection / Auto-Provisioning ---
+# --- 2. Maven Check / Provisioning ---
 $MvnCmd = $null
-
 if (Test-Path ".\mvnw.cmd") {
     $MvnCmd = ".\mvnw.cmd"
     Write-Host "Usando Maven Wrapper (mvnw.cmd)." -ForegroundColor Gray
@@ -65,8 +71,8 @@ elseif (Get-Command "mvn" -ErrorAction SilentlyContinue) {
     Write-Host "Usando Maven do Sistema (mvn)." -ForegroundColor Gray
 }
 else {
-    Write-Warning "Maven nao encontrado."
-    Write-Host "Baixando Maven Portatil (3.9.6) para rodar o projeto..." -ForegroundColor Yellow
+    Write-Warning "Maven não encontrado."
+    Write-Host "Baixando Maven Portátil (3.9.6)..." -ForegroundColor Yellow
     
     $MvnDir = Join-Path $PSScriptRoot ".maven-portable"
     $MvnZip = Join-Path $MvnDir "maven.zip"
@@ -80,19 +86,14 @@ else {
         
         Write-Host "Downloading from $RepoUrl..." -ForegroundColor DarkGray
         Invoke-WebRequest -Uri $RepoUrl -OutFile $MvnZip -UseBasicParsing
-        
-        Write-Host "Extracting..." -ForegroundColor DarkGray
         Expand-Archive -Path $MvnZip -DestinationPath $MvnDir -Force
         
-        # Determine strict path to mvn.cmd
         $ExtractedRoot = Join-Path $MvnDir "apache-maven-$MvnVersion"
         $MvnBinDir = Join-Path $ExtractedRoot "bin"
         $MvnCmd = Join-Path $MvnBinDir "mvn.cmd"
-        
-        # Add to PATH temporarily for this session to avoid issues
         $env:PATH = "$MvnBinDir;$env:PATH"
         
-        Write-Host "Maven Portatil pronto: $MvnCmd" -ForegroundColor Green
+        Write-Host "Maven Portátil pronto: $MvnCmd" -ForegroundColor Green
     }
     catch {
         Write-Error "Falha ao baixar Maven: $_"
@@ -100,7 +101,7 @@ else {
     }
 }
 
-# --- 2. Background Browser Launcher ---
+# --- 3. Background Browser Launcher ---
 $jobScript = {
     param($SwaggerUrl)
     $MaxRetries = 30
@@ -118,9 +119,25 @@ $jobScript = {
 }
 Start-Job -ScriptBlock $jobScript -ArgumentList $SwaggerUrl | Out-Null
 
-# --- 3. Run Application ---
-Write-Host "Compilando e Subindo a Aplicacao..." -ForegroundColor Cyan
+# --- 4. Run Application (With Log Redirection) ---
+Write-Host "Compilando e Subindo a Aplicação..." -ForegroundColor Cyan
+Write-Host "(Logs de erro serão salvos em logs/run_error.log)" -ForegroundColor DarkGray
 Write-Host "(Aguarde o Swagger abrir automaticamente)" -ForegroundColor DarkGray
 
+# Define Log Paths
+$ErrorLog = Join-Path $LogsDir "run_error.log"
+$BuildLog = Join-Path $LogsDir "build_output.log"
+
+# Clean old logs
+if (Test-Path $ErrorLog) { Remove-Item $ErrorLog }
+
 # Execute Maven
-& $MvnCmd spring-boot:run "-Dmaven.test.skip=true"
+try {
+    # We pipe error to the log file but keep stdout visible or piped as needed.
+    # PowerShell redirection: 2> filename redirects error stream.
+    & $MvnCmd spring-boot:run "-Dmaven.test.skip=true" 2> $ErrorLog
+}
+catch {
+    Write-Error "Falha na execução. Verifique logs/run_error.log"
+    throw $_
+}

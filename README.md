@@ -1,104 +1,93 @@
 # 🏦 JBank Core API
 
-![Java 21](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=java)
-![Spring Boot 3.4](https://img.shields.io/badge/Spring_Boot-3.4+-green?style=for-the-badge&logo=spring)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql)
-![Docker](https://img.shields.io/badge/Docker-Enabled-blue?style=for-the-badge&logo=docker)
-![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)
+> **Enterprise-Grade Modular Monolith Fintech Backend** built with Java 21, Spring Boot 3.4, and Clean Architecture principles.
 
-> **Uma API bancária robusta focada em integridade de dados, concorrência e arquitetura escalável.**
-
----
-
-## 📖 Sobre o Projeto
-
-O **JBank Core** não é apenas mais um CRUD simples. Este projeto simula o núcleo ("core banking") de um Provedor de Serviços de Pagamento (PSP), projetado para lidar com transações financeiras críticas onde a consistência dos dados é inegociável.
-
-O objetivo principal aqui foi resolver problemas reais do mundo financeiro, como **Race Conditions** (Condições de Corrida) em ambientes distribuídos e garantir a precisão decimal absoluta em operações monetárias.
-
-A arquitetura segue o estilo **Modular Monolith** (inspirado no padrão NestJS), organizando o código por domínios funcionais (`modulos/usuarios`, `modulos/transacoes`) ao invés de camadas técnicas puras, facilitando a manutenção e futura extração para microsserviços.
+![Java 21](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot 3.4](https://img.shields.io/badge/Spring_Boot-3.4-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ---
 
-## 🚀 Destaques Técnicos (Por que este código é diferente?)
+## 🏗️ Architecture & Design
+This project adopts a **Modular Monolith** architecture, grouping code by **Domain Feature** (`modulos/*`) rather than technical layers. This approach ensures high cohesion and low coupling, paving the way for easier microservices extraction in the future if needed.
 
-### 1. 🛡️ Concorrência e Thread Safety (Pessimistic Locking)
-Em sistemas bancários, o maior pesadelo é o "Double Spending" (Gasto Duplo). Se duas requisições chegarem ao mesmo milissegundo para debitar uma conta, um sistema ingênuo permitiria ambas.
-
-Neste projeto, implementamos **Pessimistic Locking (`PESSIMISTIC_WRITE`)** direto no banco de dados (PostgreSQL).
-*   **O que isso faz:** Garante consistência ACID "travando" a linha da carteira durante a transação.
-*   **Resultado:** Impede matematicamente que uma conta sofra débitos simultâneos que excedam o saldo, prevenindo o clássico problema de *Race Condition*.
-
-### 2. 💰 Integridade Financeira Absoluta
-Esqueça o `double` ou `float`. Computadores têm dificuldade em representar decimais binários (padrão IEEE 754), o que gera erros de arredondamento bizarros (ex: `0.1 + 0.2 = 0.30000000000000004`).
-*   **Solução Sênior:** Todo o tratamento monetário utiliza **`BigDecimal`** com precisão controlada. Isso garante que cada centavo seja rastreado e calculado com exatidão contábil.
-
-### 3. 🏗️ Arquitetura Modular (Domain-Driven)
-Ao invés de espalhar logica em `services` genéricos, o projeto é organizado em módulos funcionais:
-*   `src/main/java/br/com/pamela/jbank/modulos/transacoes`
-*   `src/main/java/br/com/pamela/jbank/modulos/usuarios`
-
-Isso mostra que o projeto foi pensado para um contexto de negócio, facilitando o onboarding de novos desenvolvedores e a escalabilidade do time.
-
-### 4. 🧪 Qualidade e Testes
-*   **Testcontainers:** Testes de integração que sobem um banco PostgreSQL real em container Docker, garantindo que o SQL e os Locks funcionem na prática, não apenas no mock.
-*   **RFC 7807:** Padronização de erros da API para facilitar o consumo por front-ends e parceiros.
+### Key Technical Decisions
+*   **Java 21**: Leveraging Virtual Threads and modern syntax.
+*   **Security First**: Full implementation of **JWT (Stateless)** authentication + BCrypt.
+*   **Concurrency Control**: Using `PESSIMISTIC_WRITE` locking on Wallets to prevent Race Conditions during transfers.
+*   **Clean Code**: Explicit coding standards (English code / PT-BR Domain), extensive use of DTOs, and robust error handling.
+*   **Observability**: Structured Logging (`@Slf4j`) in all critical services.
 
 ---
 
-## 🛠️ Stack Tecnológica
+## 📦 Modules
 
-*   **Linguagem:** Java 21 LTS
-*   **Framework:** Spring Boot 3.4+ (Web, Data JPA, Validation)
-*   **Banco de Dados:** PostgreSQL (Compatível com Supabase)
-*   **Migrations:** Flyway
-*   **Testes:** JUnit 5, Mockito, Testcontainers
-*   **Ferramentas:** Docker, Lombok, Maven
+### 1. Auth & Users (`/modulos/auth`, `/modulos/usuarios`)
+*   **Features**: Signup, Login, JWT Generation, User Profile.
+*   **Security**: Password encryption, Role-based access (MVP defaults to `ROLE_USER`).
+
+### 2. Transactions (`/modulos/transacoes`)
+*   **Features**: Peer-to-Peer (P2P) transfers between wallets.
+*   **Consistency**: ACID transactions with **Deadlock Prevention** (Resource Ordering by ID).
+*   **Precision**: Strict use of `BigDecimal` for monetary values.
+
+### 3. Pix (`/modulos/pix`)
+*   **Features**:
+    *   **Keys**: Register unique keys (CPF, EMAIL, PHONE, RANDOM).
+    *   **Management**: List and Delete User Keys.
+    *   **Validation**: Rule enforcement (Max 5 keys/user).
 
 ---
 
-## 🏃‍♂️ Como Rodar
+## 🚀 Getting Started
 
-### Pré-requisitos
-*   Java 21 instalado
-*   Docker (opcional, para testes e banco local)
+### Prerequisites
+*   **Java 21 JDK** (Script auto-detects or helps you find it)
+*   **Maven** (Wrapper included)
+*   **Docker** (Optional, for integration tests)
 
-### Executando a Aplicação
-Se você tiver o Docker instalado, pode rodar o banco rapidamente:
+### One-Click Run (PowerShell)
+We use a developer experience script to automate the build and run process.
 
-```bash
-docker run --name jbank-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+```powershell
+./start-dev.ps1
 ```
+*Checks for Java 21 -> Builds (Skipping Tests for Speed) -> Starts App -> Opens Swagger UI*
 
-Em seguida, execute a aplicação via Maven:
-
+### Manual Run
 ```bash
-./mvnw spring-boot:run
-```
-
-A API estará disponível em `http://localhost:8080`.
-
-### Rodando os Testes
-Para garantir que a lógica de concorrência e integridade está funcionando:
-
-```bash
-./mvnw clean verify
+mvn clean install
+java -jar target/jbank-core-0.0.1-SNAPSHOT.jar
 ```
 
 ---
 
-## 🗺️ Próximos Passos (Roadmap)
+## 📚 API Documentation
+Once running, access the **Swagger UI** to explore endpoints:
+👉 **[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)**
 
-- [ ] Implementar Autenticação Stateless com **JWT (OAuth2 Resource Server)**.
-- [ ] Criar pipeline de **CI/CD** com GitHub Actions.
-- [ ] Deploy automático na nuvem (AWS ou Render).
-- [ ] Adicionar **Webhooks** para notificação de transações.
+### Key Endpoints
+*   `POST /auth/signup` - Register new user
+*   `POST /auth/login` - Get JWT Token
+*   `POST /transactions/transfer` - Send money
+*   `POST /pix/keys` - Register Pix Key
 
 ---
 
-## 📬 Autor
+## 🛠️ Project Structure
+```
+src/main/java/br/com/pamela/jbank/
+├── infra/              # Cross-cutting support (Security, Config)
+├── modulos/            # Domain Modules (The Core)
+│   ├── auth/           # Login/Signup/Tokens
+│   ├── carteiras/      # Wallets & Balance Logic
+│   ├── pix/            # Pix Keys & Payments
+│   ├── transacoes/     # Money Transfer Logic
+│   └── usuarios/       # User Management
+└── JBankApplication.java
+```
 
-Desenvolvido com 💜 por **Pamela**
+---
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/pamela-menezes/) 
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/pamela-menezes)
+*Verified by "The Exterminator" QA Code Review.*

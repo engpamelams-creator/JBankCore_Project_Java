@@ -27,5 +27,13 @@ public class User {
     private UUID id;
     
     private String name;
+    @jakarta.persistence.Column(unique = true)
     private String email;
+
+    @jakarta.persistence.Column(nullable = false)
+    private String password;
+
+    // Pamela: Simplificação para MVP - Role hardcoded ou Enum
+    @Builder.Default
+    private String role = "ROLE_USER";
 }

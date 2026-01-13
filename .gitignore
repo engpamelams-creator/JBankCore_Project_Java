@@ -9,3 +9,4 @@ target/
 build_error.log
 test_error.log
 .env
+logs/
