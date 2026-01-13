@@ -121,11 +121,13 @@ graph TB
 
 **Windows:**
 ```bash
+cd Back-end
 run.bat
 ```
 
 **Linux/Mac:**
 ```bash
+cd Back-end
 chmod +x run.sh
 ./run.sh
 ```
