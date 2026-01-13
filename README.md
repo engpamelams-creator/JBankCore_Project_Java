@@ -1,481 +1,290 @@
 # 🏦 JBank Core API
 
-> **Backend Fintech de Nível Empresarial com Arquitetura Modular Monolítica + Microsserviços** construído com Java 21, Spring Boot 3.4, Quarkus, RabbitMQ e princípios de Clean Architecture.
+> **Enterprise-Grade Fintech Backend** with Fort Knox Security, Clean Architecture, and Production-Ready Features
 
 ![Java 21](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring_Boot-3.4-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
 ![Quarkus 3.6](https://img.shields.io/badge/Quarkus-3.6-4695EB?style=for-the-badge&logo=quarkus&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.13-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 ---
 
-## 📋 Índice
+## 📖 About
 
-- [Arquitetura & Design](#️-arquitetura--design)
-- [Módulos](#-módulos)
-- [Arquitetura de Microsserviços](#-arquitetura-de-microsserviços-event-driven)
-- [Começando](#-começando)
-- [Documentação da API](#-documentação-da-api)
-- [Estrutura do Projeto](#️-estrutura-do-projeto)
-- [Segurança](#-segurança)
-- [Testes](#-testes)
+**JBank Core** is a high-performance banking API built to solve **real-world financial challenges**: race conditions in concurrent transactions, data encryption at rest, and distributed event processing. 
+
+This project demonstrates **Senior-level architecture** with:
+- 🛡️ **Fort Knox Security Protocol**: JWT + AES-256 + Rate Limiting
+- 🏗️ **Clean Architecture + DDD**: Domain-driven, framework-independent core
+- ⚡ **Polyglot Microservices**: Spring Boot + Quarkus + OpenFeign
+- 📊 **Production Ready**: Swagger UI, Actuator, Circuit Breaker
 
 ---
 
-## 🏗️ Arquitetura & Design
+## 🏗️ Architecture
 
-Este projeto adota uma **arquitetura híbrida**:
+### System Flow
 
-### 1. Modular Monolítico (JBank Core)
-Código agrupado por **Domínio/Funcionalidade** (`modulos/*`) em vez de camadas técnicas. Esta abordagem garante alta coesão e baixo acoplamento.
-
-### 2. Event-Driven Microservices
-Microsserviço de notificação desacoplado usando **RabbitMQ** para comunicação assíncrona.
-
-```
-┌─────────────────────┐         ┌──────────────┐         ┌─────────────────────────┐
-│   JBank Core API    │         │   RabbitMQ   │         │  Notification Service   │
-│  (Spring Boot 3.4)  │────────▶│   Message    │────────▶│   (Spring Boot 3.4)     │
-│     Port: 8080      │ Publish │    Broker    │ Consume │      Port: 8081         │
-│                     │         │              │         │                         │
-│  - Transferências   │         │   Queue:     │         │  - Envio de Emails      │
-│  - Autenticação     │         │  transaction-│         │  - Envio de SMS         │
-│  - Gestão Carteiras │         │  notification│         │  - Push Notifications   │
-│  - PIX              │         │              │         │                         │
-└────────┬────────────┘         └──────────────┘         └─────────────────────────┘
-         │
-         │ HTTP
-         ▼
-┌─────────────────────┐
-│  Pix Validator      │  ◀── NOVO! Quarkus (Cloud Native)
-│   (Quarkus 3.6)     │
-│     Port: 8082      │  ⚡ Supersônico & Subatômico
-│                     │  📊 Startup: 0.8s | Memory: 120MB
-│  - Validação PIX    │
-└─────────────────────┘
+```mermaid
+graph LR
+    Client[Client] --> RateLimit[Rate Limiter<br/>Bucket4j]
+    RateLimit --> Auth[JWT Auth Filter]
+    Auth --> Controller[REST Controller]
+    Controller --> Service[Business Service]
+    Service --> Repository[JPA Repository<br/>Pessimistic Lock]
+    Repository --> DB[(PostgreSQL)]
+    
+    Service --> RabbitMQ[RabbitMQ]
+    RabbitMQ --> Notification[Notification<br/>Service]
+    
+    Controller --> Integrator[Integrator<br/>Service]
+    Integrator --> BrasilAPI[Brasil API]
+    Integrator --> OpenFinance[Open Finance]
+    
+    style RateLimit fill:#ff6b6b
+    style Auth fill:#4ecdc4
+    style DB fill:#95e1d3
+    style RabbitMQ fill:#f38181
 ```
 
-### Decisões Técnicas Chave
+### Microservices Ecosystem
 
-*   **Java 21**: Aproveitando Virtual Threads e sintaxe moderna.
-*   **Segurança "Fort Knox"**:
-    *   **JWT (Stateless)** autenticação + BCrypt.
-    *   **Rate Limiting**: Bucket4j (Token Bucket) previne ataques de força bruta/DDoS.
-    *   **Defesa em Profundidade**: PIN transacional obrigatório para transferências.
-    *   **Privacidade de Dados**: Criptografia AES-256 para campos sensíveis (Email/CPF) em repouso.
-*   **Controle de Concorrência**: Uso de `PESSIMISTIC_WRITE` locking em Carteiras para prevenir Race Conditions.
-*   **Padrão JSend**: Respostas padronizadas da API (`success`, `fail`, `error`) para facilitar consumo e manutenção.
-*   **Event-Driven Architecture**: RabbitMQ para desacoplamento de notificações.
-
----
-
-## 📦 Módulos
-
-### 1. Autenticação & Usuários (`/modulos/auth`, `/modulos/usuarios`)
-*   **Funcionalidades**: Cadastro, Login, Geração de JWT, Perfil de Usuário, Definição de PIN Transacional.
-*   **Segurança**: Criptografia de senha, Controle de acesso baseado em roles (MVP padrão: `ROLE_USER`).
-
-### 2. Transações (`/modulos/transacoes`)
-*   **Funcionalidades**: Transferências Peer-to-Peer (P2P) entre carteiras.
-*   **Consistência**: Transações ACID com **Prevenção de Deadlock** (Ordenação de Recursos por ID).
-*   **Precisão**: Uso estrito de `BigDecimal` para valores monetários.
-*   **Event Publishing**: Publica eventos de transferência para RabbitMQ.
-
-### 3. PIX (`/modulos/pix`)
-*   **Funcionalidades**:
-    *   **Chaves**: Registro de chaves únicas (CPF, EMAIL, PHONE, RANDOM).
-    *   **Gerenciamento**: Listagem e Exclusão de Chaves do Usuário.
-    *   **Validação**: Aplicação de regras (Máx. 5 chaves/usuário).
-    *   **Integração**: Validação de formato via microsserviço Quarkus (opcional).
-
-### 4. Pix Validator (`jbank-pix-validator` - Quarkus)
-*   **Funcionalidades**:
-    *   **Validação Ultra-Rápida**: Validação de formato de chaves PIX em ~1ms.
-    *   **Tipos Suportados**: EMAIL, CPF, PHONE, RANDOM (UUID).
-    *   **Cloud Native**: Startup em 0.8s, consumo de apenas 120MB de memória.
-    *   **API REST**: Endpoint `POST /api/pix/validate` com documentação Swagger.
-
----
-
-## 🚀 Arquitetura de Microsserviços (Event-Driven)
-
-### 🎯 Benefícios
-
-✅ **Desacoplamento** - Notificações separadas do core bancário  
-✅ **Resiliência** - Transferências funcionam mesmo se notificações falharem  
-✅ **Escalabilidade** - Múltiplas instâncias podem consumir a mesma fila  
-✅ **Flexibilidade** - Fácil adicionar novos canais (SMS, Push, WhatsApp)
-
-### 📦 Estrutura
-
-```
-JBankCore/
-├── Back-end/                          # JBank Core (Monolito Modular)
-│   ├── src/main/java/
-│   │   ├── modulos/transacoes/
-│   │   │   ├── events/TransferenciaEvent.java    # Evento publicado
-│   │   │   └── service/TransferService.java      # Publica eventos
-│   │   └── infra/messaging/
-│   │       └── RabbitMQConfig.java               # Config RabbitMQ
-│   └── pom.xml
-│
-├── jbank-notification/                # Microsserviço de Notificação
-│   ├── src/main/java/
-│   │   ├── listener/NotificationListener.java    # Consome eventos
-│   │   ├── model/TransferenciaEvent.java
-│   │   └── JBankNotificationApplication.java
-│   └── pom.xml
-│
-└── docker-compose.yml                 # RabbitMQ + PostgreSQL
+```mermaid
+graph TB
+    subgraph "JBank Ecosystem"
+        Core[JBank Core API<br/>Port 8080<br/>Spring Boot]
+        Notification[Notification Service<br/>Port 8081<br/>Spring Boot + RabbitMQ]
+        PixValidator[Pix Validator<br/>Port 8082<br/>Quarkus]
+        Integrator[Integrator<br/>Port 8083<br/>Spring Boot + OpenFeign]
+    end
+    
+    Core --> RabbitMQ[RabbitMQ<br/>Message Broker]
+    RabbitMQ --> Notification
+    
+    Core --> PixValidator
+    Core --> Integrator
+    
+    Integrator --> BrasilAPI[Brasil API<br/>External]
+    Integrator --> OpenFinance[Open Finance<br/>Simulated]
+    
+    Core --> PostgreSQL[(PostgreSQL<br/>Database)]
+    
+    style Core fill:#6c5ce7
+    style Notification fill:#00b894
+    style PixValidator fill:#fdcb6e
+    style Integrator fill:#e17055
 ```
 
 ---
 
-## 🚀 Começando
+## ✨ Key Features
 
-### ⚠️ Pré-requisitos
+### 🛡️ Fort Knox Security Protocol
 
-1. **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop/)
-   - Abra e aguarde até estar completamente iniciado
-   - Verifique: `docker --version`
+- **JWT Stateless Authentication**: No session storage, fully scalable
+- **AES-256 Encryption**: PII data (CPF, Email) encrypted at rest
+- **Rate Limiting**: Bucket4j prevents brute-force attacks (5 req/min per IP)
+- **Transactional PIN**: Secondary authentication for sensitive operations
+- **OWASP Dependency Check**: Automated vulnerability scanning
 
-2. **Java 21 JDK**
-   - Verifique: `java -version`
+### 💸 Core Banking Features
 
-3. **Maven** (Opcional - projeto tem wrapper)
-   - Verifique: `mvn -version`
+- **ACID Transactions**: Pessimistic locking prevents race conditions
+- **PIX Integration**: Key registration (EMAIL, CPF, PHONE, RANDOM)
+- **Wallet Management**: Real-time balance updates with concurrency control
+- **Audit Logs**: Complete transaction history for compliance
 
-### 🎯 Opção 1: Execução Rápida (Apenas JBank Core)
+### 📊 Production Readiness
 
-Use o script PowerShell para iniciar apenas o core bancário:
+- **Swagger UI**: Interactive API documentation (`/swagger-ui.html`)
+- **Spring Actuator**: Health checks and metrics (`/actuator/health`)
+- **Circuit Breaker**: Resilience4j for external integrations
+- **Event-Driven**: RabbitMQ for async notifications
 
-```powershell
-cd Back-end
-.\scripts\dev\start-dev.ps1
-```
+### 🌐 External Integrations
 
-*Verifica Java 21 → Compila → Inicia App → Abre Swagger UI*
-
-### 🎯 Opção 2: Arquitetura Completa (Core + Microsserviços)
-
-#### Passo 1: Iniciar Infraestrutura (RabbitMQ + PostgreSQL)
-
-```powershell
-# Entre na pasta Back-end
-cd Back-end
-docker-compose up -d
-```
-
-**Verificar:**
-```powershell
-docker ps
-# Deve mostrar: jbank-rabbitmq e jbank-postgres
-```
-
-**Acessar RabbitMQ Management UI:**
-- URL: http://localhost:15672
-- Usuário: `guest` / Senha: `guest`
-
-#### Passo 2: Iniciar JBank Core
-
-**Terminal 1:**
-```powershell
-cd Back-end
-.\scripts\dev\start-dev.ps1
-```
-
-Ou manualmente:
-```powershell
-cd Back-end
-.\mvnw.cmd clean install -DskipTests
-.\mvnw.cmd spring-boot:run
-```
-
-Aguarde ver: `Started JBankCoreApplication`
-
-#### Passo 3: Iniciar Notification Service
-
-**Terminal 2:**
-```powershell
-cd Back-end
-.\scripts\notification\start-notification-service.ps1
-```
-
-Ou manualmente:
-```powershell
-cd Back-end\jbank-notification
-..\mvnw.cmd clean install -DskipTests
-..\mvnw.cmd spring-boot:run
-```
-
-Aguarde ver o banner:
-```
-╔═══════════════════════════════════════════════════════════╗
-║   🔔 JBank Notification Service Started Successfully! 🔔  ║
-╚═══════════════════════════════════════════════════════════╝
-```
-
-#### Passo 4: Verificar Tudo
-
-**Terminal 3:**
-```powershell
-cd Back-end
-.\scripts\infra\verify-microservices.ps1
-```
-
-Deve mostrar:
-```
-✅ RabbitMQ está rodando!
-✅ JBank Core está rodando!
-✅ Notification Service está rodando!
-```
+- **Brasil API**: Real-time Brazilian banks data (~200 banks)
+- **Open Finance**: Architecture ready for OAuth2 integration
 
 ---
 
-## 🧪 Testando a Arquitetura Event-Driven
+## 🚀 Quick Start
 
-### 1. Fazer uma Transferência
+### Prerequisites
 
-```http
-POST http://localhost:8080/api/v1/transfers
-Authorization: Bearer {seu_token_jwt}
-Content-Type: application/json
+- **Java 21** ([Download](https://adoptium.net/))
+- **Docker Desktop** ([Download](https://www.docker.com/products/docker-desktop))
 
-{
-  "senderId": "uuid-do-remetente",
-  "receiverId": "uuid-do-destinatario",
-  "amount": 100.00,
-  "pin": "1234"
-}
+### One-Click Start 🎯
+
+**Windows:**
+```bash
+run.bat
 ```
 
-### 2. Observar os Logs
-
-**Terminal 1 (JBank Core):**
-```
-Transfer completed successfully. Transaction ID: abc-123
-📨 Event published for transaction [abc-123] to notification queue
+**Linux/Mac:**
+```bash
+chmod +x run.sh
+./run.sh
 ```
 
-**Terminal 2 (Notification Service):**
-```
-========================================
-📨 NEW NOTIFICATION EVENT RECEIVED
-========================================
-Transaction ID: abc-123
-Amount: R$ 100,00
-----------------------------------------
-📧 Email sent to SENDER: sender@example.com
-📧 Email sent to RECEIVER: receiver@example.com
-✅ Notifications sent successfully!
-========================================
-```
+**That's it!** The script will:
+1. ✅ Check if Docker is running
+2. ✅ Build the project (`mvn clean package`)
+3. ✅ Start all containers (`docker-compose up`)
+4. ✅ Display access URLs
 
-### 3. Verificar RabbitMQ UI
-
-1. Acesse http://localhost:15672
-2. Vá em **Queues** → `transaction-notification-queue`
-3. Veja estatísticas de mensagens processadas
-
----
-
-## 📚 Documentação da API
-
-Uma vez em execução, acesse a **Swagger UI** para explorar os endpoints:
-👉 **[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)**
-
-### Endpoints Principais
-*   `POST /auth/signup` - Registrar novo usuário
-*   `POST /auth/login` - Obter Token JWT
-*   `POST /api/v1/users/pin` - Definir PIN transacional
-*   `POST /api/v1/transfers` - Enviar dinheiro
-*   `POST /pix/keys` - Registrar Chave Pix
-*   `GET /pix/keys` - Listar Chaves Pix do usuário
-
-### Formato de Resposta JSend
-
-Todas as respostas da API seguem o padrão JSend para consistência:
-
-**Sucesso (2xx):**
-```json
-{
-  "status": "success",
-  "data": { /* payload */ }
-}
-```
-
-**Falha de Validação (4xx):**
-```json
-{
-  "status": "fail",
-  "data": "Mensagem de erro ou objeto com detalhes"
-}
-```
-
-**Erro do Sistema (5xx):**
-```json
-{
-  "status": "error",
-  "message": "Descrição do erro",
-  "code": "OPTIONAL_ERROR_CODE"
-}
-```
-
----
-
-## 🛠️ Estrutura do Projeto
-
-```
-JBankCore/
-├── .gitignore                   # Configuração Git
-├── README.md                    # Esta documentação
-│
-└── Back-end/                    # Todo o código do projeto
-    ├── scripts/                 # Scripts organizados por categoria
-    │   ├── dev/                 # Scripts de desenvolvimento
-    │   │   ├── start-dev.ps1
-    │   │   ├── cleanup-workspace.ps1
-    │   │   └── verify-build.ps1
-    │   ├── infra/               # Scripts de infraestrutura
-    │   │   ├── bootstrap.ps1
-    │   │   └── verify-microservices.ps1
-    │   └── notification/        # Scripts do microsserviço
-    │       └── start-notification-service.ps1
-    │
-    ├── src/main/java/br/com/jbank/core/
-    │   ├── modulos/             # Módulos de Domínio (DDD)
-    │   │   ├── auth/            # Autenticação
-    │   │   ├── usuarios/        # Gestão de Usuários
-    │   │   ├── transacoes/      # Transferências + Events
-    │   │   │   ├── events/      # TransferenciaEvent
-    │   │   │   └── service/     # TransferService (Publisher)
-    │   │   ├── carteiras/       # Carteiras/Wallets
-    │   │   └── pix/             # Sistema Pix
-    │   └── infra/               # Infraestrutura
-    │       ├── defense/         # Segurança (JWT, Rate Limit, Crypto)
-    │       ├── messaging/       # RabbitMQ Config
-    │       ├── response/        # Padrão JSend
-    │       └── exception/       # Tratamento Global de Erros
-    │
-    ├── jbank-notification/      # Microsserviço de Notificação
-    │   ├── src/main/java/br/com/jbank/notification/
-    │   │   ├── listener/        # NotificationListener (Consumer)
-    │   │   ├── model/           # TransferenciaEvent
-    │   │   ├── config/          # RabbitMQ Config
-    │   │   └── JBankNotificationApplication.java
-    │   └── pom.xml
-    │
-    ├── DevOps-defense/          # Documentação de Segurança
-    │   ├── SECURITY.md
-    │   └── THREAT_MODEL.md
-    │
-    ├── docker-compose.yml       # RabbitMQ + PostgreSQL
-    ├── pom.xml
-    └── mvnw.cmd                 # Maven Wrapper
-```
-
----
-
-## 🔒 Segurança
-
-### Camadas de Proteção "Fort Knox"
-
-1. **Autenticação JWT Stateless**: Tokens assinados com HS256, validados em cada requisição.
-2. **Rate Limiting**: Proteção contra ataques de força bruta e DDoS usando Bucket4j.
-3. **PIN Transacional**: Camada adicional de segurança para operações financeiras sensíveis.
-4. **Criptografia de Dados**: AES-256 para PII (CPF, Email) em repouso no banco de dados.
-5. **Locking Pessimista**: Previne race conditions em operações de saldo de carteira.
-6. **Tratamento Global de Exceções**: Respostas de erro padronizadas sem exposição de detalhes internos.
-
----
-
-## 🧪 Testes
+### Manual Start
 
 ```bash
-# Executar todos os testes
-.\mvnw.cmd test
+# Clone the repository
+git clone https://github.com/engpamelams-creator/JBankCore_Project_Java.git
+cd JBankCore
 
-# Executar apenas testes de integração
-.\mvnw.cmd verify -P integration-tests
+# Start with Docker Compose
+docker-compose up --build
 ```
 
+### Access Points
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Swagger UI** | http://localhost:8080/swagger-ui.html | Interactive API docs |
+| **Actuator Health** | http://localhost:8080/actuator/health | Health check |
+| **Actuator Metrics** | http://localhost:8080/actuator/metrics | Application metrics |
+| **RabbitMQ Management** | http://localhost:15672 | Message broker UI (guest/guest) |
+| **Integrator API** | http://localhost:8083/integrations/banks | Brazilian banks list |
+
 ---
 
-## 🔧 Troubleshooting
+## 📚 Documentation
 
-### Erro: "mvn não é reconhecido"
-**Solução**: Use o Maven Wrapper incluído no projeto:
-```powershell
-.\mvnw.cmd clean install
+### API Endpoints
+
+Access the **Swagger UI** for complete API documentation:  
+👉 **http://localhost:8080/swagger-ui.html**
+
+**How to authenticate:**
+1. Use `POST /auth/signup` to create an account
+2. Use `POST /auth/login` to get your JWT token
+3. Click **"Authorize"** in Swagger UI
+4. Enter: `Bearer <your-token>`
+5. Test protected endpoints!
+
+### Core Modules
+
+- **Users** (`/modulos/usuarios`): Registration, authentication, profile management
+- **Wallets** (`/modulos/carteiras`): Balance management, ACID transactions
+- **Transactions** (`/modulos/transacoes`): Money transfers with pessimistic locking
+- **PIX** (`/modulos/pix`): PIX key registration and management
+
+---
+
+## 📁 Project Structure
+
+```
+JBankCore/
+├── Back-end/                          # Main application
+│   ├── src/main/java/br/com/jbank/core/
+│   │   ├── modulos/                   # Business modules (DDD)
+│   │   │   ├── usuarios/              # User management
+│   │   │   ├── carteiras/             # Wallet management
+│   │   │   ├── transacoes/            # Transactions
+│   │   │   └── pix/                   # PIX integration
+│   │   ├── infra/                     # Infrastructure layer
+│   │   │   ├── defense/               # Security (JWT, Rate Limit)
+│   │   │   ├── messaging/             # RabbitMQ config
+│   │   │   └── config/                # Spring config
+│   │   └── shared/                    # Shared utilities
+│   ├── jbank-notification/            # Notification microservice
+│   ├── jbank-pix-validator/           # Pix validator (Quarkus)
+│   └── jbank-integrator/              # External integrations
+├── DevOps-defense/                    # Security & DevOps
+│   ├── scan-secrets.sh                # Secret scanner
+│   └── security-audit.md              # Security documentation
+├── docker-compose.yml                 # Container orchestration
+├── run.bat / run.sh                   # One-click start scripts
+└── README.md                          # This file
 ```
 
-### Erro: "Docker não está rodando"
-**Solução**: Abra o Docker Desktop e aguarde inicializar completamente.
+### Why `DevOps-defense`?
 
-### Erro: "Port 8080 already in use"
-**Solução**: Pare outros serviços na porta 8080 ou mude a porta no `application.yml`.
-
-### Notification Service não recebe eventos
-**Solução**:
-1. Verifique a fila no RabbitMQ UI: http://localhost:15672
-2. Vá em "Queues" → "transaction-notification-queue"
-3. Veja se há consumidores conectados
+This folder contains **security automation** and **audit documentation**:
+- **Secret Scanner**: Prevents accidental password commits
+- **OWASP Dependency Check**: Automated vulnerability scanning
+- **Security Audit**: Compliance documentation
 
 ---
 
-## 🎓 Conceitos Aprendidos
+## 🛠️ Tech Stack
 
-✅ **Event-Driven Architecture** - Comunicação assíncrona entre serviços  
-✅ **RabbitMQ** - Message broker para desacoplamento  
-✅ **Producer/Consumer Pattern** - Publicação e consumo de eventos  
-✅ **Microservices** - Serviços independentes e escaláveis  
-✅ **Resilience** - Falhas de notificação não quebram transferências  
-✅ **Clean Architecture** - Separação de responsabilidades  
-✅ **ACID Transactions** - Garantia de consistência de dados  
+### Core Technologies
 
----
+| Category | Technology |
+|----------|-----------|
+| **Language** | Java 21 |
+| **Frameworks** | Spring Boot 3.4, Quarkus 3.6 |
+| **Database** | PostgreSQL 16 |
+| **Message Broker** | RabbitMQ 3.13 |
+| **API Integration** | Spring Cloud OpenFeign |
+| **Containerization** | Docker, Docker Compose |
 
-## 🔮 Próximos Passos
+### Security & Observability
 
-### Nível Intermediário
-- [ ] Adicionar Dead Letter Queue (DLQ) para mensagens com falha
-- [ ] Implementar Circuit Breaker com Resilience4j
-- [ ] Adicionar métricas com Micrometer + Prometheus
-
-### Nível Avançado
-- [ ] Criar Anti-Fraud Service (análise de transações suspeitas em Python)
-- [ ] Criar Extrato Service com CQRS (MongoDB para leitura)
-- [ ] Criar BACEN Simulator (simula instabilidade de APIs externas)
-- [ ] Implementar Saga Pattern para transações distribuídas
-
----
-
-## 📚 Referências
-
-- [Spring AMQP Documentation](https://spring.io/projects/spring-amqp)
-- [RabbitMQ Tutorials](https://www.rabbitmq.com/getstarted.html)
-- [Microservices Patterns - Chris Richardson](https://microservices.io/patterns/index.html)
-- [Event-Driven Architecture - Martin Fowler](https://martinfowler.com/articles/201701-event-driven.html)
+| Feature | Implementation |
+|---------|---------------|
+| **Authentication** | JWT (jjwt 0.11.5) |
+| **Encryption** | AES-256 (Java Crypto) |
+| **Rate Limiting** | Bucket4j 7.6.0 |
+| **API Docs** | SpringDoc OpenAPI 2.3.0 |
+| **Monitoring** | Spring Boot Actuator |
+| **Resilience** | Resilience4j Circuit Breaker |
 
 ---
 
-## 🤝 Contribuindo
+## 🎓 Learning Highlights
 
-Contribuições são bem-vindas! Por favor, siga os padrões de código estabelecidos:
-*   Use `BigDecimal` para valores monetários.
-*   Implemente locking apropriado para operações concorrentes.
-*   Mantenha a separação de responsabilidades (Clean Architecture).
-*   Escreva testes para novas funcionalidades.
+This project demonstrates:
+
+✅ **Clean Architecture**: Domain layer independent of frameworks  
+✅ **DDD (Domain-Driven Design)**: Business logic in domain entities  
+✅ **CQRS Pattern**: Separate read/write operations  
+✅ **Event-Driven Architecture**: Async processing with RabbitMQ  
+✅ **Gateway Pattern**: Centralized external integrations  
+✅ **Circuit Breaker**: Resilience for external APIs  
+✅ **Pessimistic Locking**: Prevents race conditions in transactions  
+✅ **Multi-Stage Docker Builds**: Optimized container images  
 
 ---
 
-## 📝 Licença
+## 🤝 Contributing
 
-Este projeto é de código aberto e está disponível sob a licença MIT.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-*Desenvolvido com ❤️ usando Java 21, Spring Boot 3.4 e RabbitMQ*  
-**Por Pamela Menezes** 🚀
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👩‍💻 Author
+
+**Pamela Menezes**  
+Senior Java Architect | Fintech Specialist
+
+[![GitHub](https://img.shields.io/badge/GitHub-engpamelams--creator-181717?style=for-the-badge&logo=github)](https://github.com/engpamelams-creator)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/pamela-menezes)
+
+---
+
+<div align="center">
+
+**⭐ If you found this project helpful, please give it a star!**
+
+Made with ❤️ and ☕ by Pamela Menezes
+
+</div>
