@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: jbank-notification-service
+
+  # RabbitMQ Configuration (same as Core)
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+        # Concurrency: number of concurrent consumers
+        concurrency: 2
+        max-concurrency: 5
+
+server:
+  port: 8081  # Different port to avoid conflict with JBank Core (8080)
+
+# Logging configuration
+logging:
+  level:
+    br.com.jbank.notification: INFO
+    org.springframework.amqp: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

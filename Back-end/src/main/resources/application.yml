@@ -27,5 +27,19 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  # Event-Driven Architecture: RabbitMQ Configuration
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+
 server:
   port: 8080

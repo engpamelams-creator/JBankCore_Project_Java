@@ -1,11 +1,14 @@
 package br.com.jbank.core.modulos.transacoes.service;
 
+import br.com.jbank.core.infra.messaging.RabbitMQConfig;
 import br.com.jbank.core.modulos.carteiras.domain.Wallet;
 import br.com.jbank.core.modulos.carteiras.domain.WalletRepository;
 import br.com.jbank.core.modulos.transacoes.controller.dto.TransferRequestDTO;
 import br.com.jbank.core.modulos.transacoes.controller.dto.TransferResponseDTO;
 import br.com.jbank.core.modulos.transacoes.domain.Transaction;
 import br.com.jbank.core.modulos.transacoes.domain.TransactionRepository;
+import br.com.jbank.core.modulos.transacoes.events.TransferenciaEvent;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +20,18 @@ public class TransferService {
     private final TransactionRepository transactionRepository;
     private final WalletRepository walletRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final RabbitTemplate rabbitTemplate;
 
     @Autowired
     public TransferService(
             TransactionRepository transactionRepository,
             WalletRepository walletRepository,
-            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
+            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
+            RabbitTemplate rabbitTemplate) {
         this.transactionRepository = transactionRepository;
         this.walletRepository = walletRepository;
         this.passwordEncoder = passwordEncoder;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     /**
@@ -96,7 +102,33 @@ public class TransferService {
         transaction = transactionRepository.save(transaction);
         log.info("Transfer completed successfully. Transaction ID: {}", transaction.getId());
 
-        // 6. Return DTO
+        // 7. Event-Driven Architecture: Publish notification event
+        // Pamela: Publicamos o evento APÓS a transação ser salva com sucesso.
+        // Se o RabbitMQ estiver indisponível, a transferência ainda será concluída.
+        // Usamos try-catch para garantir que falhas de notificação não quebrem a transferência.
+        try {
+            var event = TransferenciaEvent.of(
+                transaction.getId(),
+                transaction.getAmount(),
+                senderWallet.getUser().getEmail(),
+                receiverWallet.getUser().getEmail()
+            );
+            
+            rabbitTemplate.convertAndSend(
+                RabbitMQConfig.TRANSACTION_NOTIFICATION_QUEUE,
+                event
+            );
+            
+            log.info("📨 Event published for transaction [{}] to notification queue", transaction.getId());
+        } catch (Exception e) {
+            // Pamela: Logamos o erro mas NÃO propagamos a exceção.
+            // A transferência já foi concluída com sucesso no banco de dados.
+            // A notificação é um processo secundário que não deve afetar a operação principal.
+            log.error("Failed to publish notification event for transaction [{}]: {}", 
+                transaction.getId(), e.getMessage(), e);
+        }
+
+        // 8. Return DTO
         return new TransferResponseDTO(
             transaction.getId(),
             transaction.getAmount(),
