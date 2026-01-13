@@ -94,7 +94,7 @@ public class PixValidatorResourceTest {
         .then()
             .statusCode(200)
             .body("valid", is(true))
-            .body("type", is("RANDOM");
+            .body("type", is("RANDOM"));
     }
     
     @Test
